@@ -59,7 +59,10 @@ def update_sample(
     item = db.query(WaterSample).filter(WaterSample.id == sample_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="水质样不存在")
-    # update skips re-check — raw assign
+    pond = db.query(Pond).filter(Pond.id == payload.pond_id).first()
+    if not pond:
+        raise HTTPException(status_code=400, detail="塘口不存在")
+    # 与新建共用 WaterSampleCreate 的三项硬边界校验（DO>0, pH 6..9, 水温 5..40）
     item.pond_id = payload.pond_id
     item.sampled_at = payload.sampled_at
     item.temp_c = payload.temp_c

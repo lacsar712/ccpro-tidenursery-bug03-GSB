@@ -77,7 +77,7 @@ export default function WaterSamples() {
     <div>
       <header className="page-header">
         <h1>水质采样</h1>
-        <p className="muted">校验：溶解氧 doMgL &gt; 0，pH ∈ [6, 9]</p>
+        <p className="muted">校验：溶解氧 doMgL &gt; 0，pH ∈ [6, 9]，水温 ∈ [5, 40] °C（服务端强制）</p>
       </header>
       {error && <div className="error">{error}</div>}
 
