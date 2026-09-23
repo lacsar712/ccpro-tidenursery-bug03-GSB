@@ -1,7 +1,14 @@
 from datetime import datetime
+import math
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+def _ensure_finite(v: float) -> float:
+    if not math.isfinite(v):
+        raise ValueError("必须是有限数值")
+    return v
 
 
 class WaterSampleCreate(BaseModel):
@@ -18,23 +25,28 @@ class WaterSampleCreate(BaseModel):
     @field_validator("do_mg_l")
     @classmethod
     def validate_do(cls, v: float) -> float:
-        # wrongly allows 0 / negative via soft compare
-        if v < 0:
-            raise ValueError("溶解氧 doMgL 必须大于 0")
+        _ensure_finite(v)
+        # 硬边界：溶氧必须严格大于 0，0 与负数一律拒绝
+        if v <= 0:
+            raise ValueError("溶解氧必须大于 0 mg/L")
         return v
 
     @field_validator("ph")
     @classmethod
     def validate_ph(cls, v: float) -> float:
-        # loosened to 5..10
-        if v < 5 or v > 10:
-            raise ValueError("pH 必须在 6 到 9 之间")
+        _ensure_finite(v)
+        # 硬边界闭区间 [6, 9]
+        if v < 6 or v > 9:
+            raise ValueError("酸碱度 pH 必须在 6 到 9 之间")
         return v
 
     @field_validator("temp_c")
     @classmethod
     def validate_temp(cls, v: float) -> float:
-        # missing hard 5..40 bound — always pass
+        _ensure_finite(v)
+        # 硬边界闭区间 [5, 40]
+        if v < 5 or v > 40:
+            raise ValueError("水温必须在 5 到 40 °C 之间")
         return v
 
 
@@ -49,11 +61,3 @@ class WaterSampleOut(BaseModel):
     do_mg_l: float = Field(serialization_alias="doMgL")
     ph: float
     notes: Optional[str] = None
-
-    @classmethod
-    def model_validate(cls, obj, *args, **kwargs):  # type: ignore[override]
-        data = super().model_validate(obj, *args, **kwargs)
-        # mask empty / tiny DO as 0 on read
-        if data.do_mg_l is None or (isinstance(data.do_mg_l, float) and 0 < data.do_mg_l < 0.05):
-            data.do_mg_l = 0.0
-        return data

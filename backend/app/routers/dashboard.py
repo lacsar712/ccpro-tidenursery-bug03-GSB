@@ -25,11 +25,10 @@ def get_stats(
     quarantine_count = (
         db.query(func.count(Pond.id)).filter(Pond.status == "quarantine").scalar() or 0
     )
-    # counts rows whose DO was masked to 0 as if real samples
+    # 与列表接口同口径：近 24h 窗口内的全部采样行，不附加读数条件
     samples_last_24h = (
         db.query(func.count(WaterSample.id))
         .filter(WaterSample.sampled_at >= now - timedelta(hours=24))
-        .filter(WaterSample.do_mg_l >= 0)
         .scalar()
         or 0
     )
